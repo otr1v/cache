@@ -28,12 +28,10 @@ public:
         list_it list_iter;
         size_t counter;
         size_t age;
-        cache_elem(list_it it): list_iter(it), counter(0) 
+        cache_elem(list_it it): list_iter(it), counter(1), age(number_of_elems)
         {
-            age = number_of_elems;
-            number_of_elems++;
+            printf("HAS CREATED %d\n", number_of_elems);
         }
-        //list_it lowest_counter_and_oldest_iter;
     };
     LFU_cache(size_t sz): size(sz) {}
     std::unordered_map<key_type, cache_elem> my_hash;
@@ -71,6 +69,7 @@ public:
         my_list.emplace_front(elem.key, elem.value);
         my_cache.emplace(my_list.begin());
         my_hash.emplace(elem.key, my_list.begin());
+        number_of_elems++;
     }
 
     void erase_elem()
@@ -81,6 +80,15 @@ public:
         printf("%d", set_iter->list_iter->key);
         my_list.erase(set_iter->list_iter);
         
+    }
+    
+    void update_elem(auto iter)
+    {
+        //printf("before update %d\n", iter->second.counter);
+        iter->second.counter++;
+        //printf("after update %d\n", number_of_elems);
+        iter->second.age = number_of_elems;
+        number_of_elems++;
     }
 
     bool lookup_update(list_elem& elem)
@@ -97,9 +105,7 @@ public:
         }
         else
         {
-            printf("NOT DONE YET");
-
-            
+            update_elem(hit);
         }
         return true;
     }

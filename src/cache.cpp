@@ -14,6 +14,7 @@ int main()
     my_cache.lookup_update(list1);
     my_cache.lookup_update(list2);
     my_cache.lookup_update(list3);
-    //my_cache.erase_elem();
+    my_cache.lookup_update(list3);
+    my_cache.erase_elem();
     return 0;
 }
