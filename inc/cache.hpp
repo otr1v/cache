@@ -5,36 +5,46 @@
 namespace caches
 {
 using size_type = std::size_t;
-static std::size_t NumberOfElems = 0;
-static std::size_t MaxCacheSize = UINT32_MAX;
 
+/* !!! Needs only for LFU_cache.
+    Global is used to count number of elems that we have as input.
+    Is used to assign to each element his own identifier(born_data).
+    Is used to define what element we need to erase when we have the same counter:
+    If born_data of elem1 < born_data of elem2, we erase elem1, because he is older.
+     */
+static std::size_t NumberOfElems = 0;
+
+static std::size_t MaxCacheSize = UINT32_MAX;
+static std::size_t InvalidValue = 0xDEADBABE;
 template <typename elem_type, typename key_type = int>  
 class LFU_cache
 {
+private:
+    size_type size;
+
 public:
-    const size_type size;
-    
     struct list_elem
     {
         key_type key;
         elem_type value;
         list_elem(key_type k, elem_type elem): key(k), value(elem) {}
     };
+
+private:
     std::list<list_elem> my_list;
     using list_it = typename std::list<list_elem>::iterator;
     struct cache_elem
     {
         list_it list_iter;
         size_type counter;
-        size_type age;
-        cache_elem(list_it it): list_iter(it), counter(1), age(NumberOfElems)
-        {
-            printf("HAS CREATED %ld\n", NumberOfElems);
-        }
+        size_type born_data;
+        cache_elem(list_it it): list_iter(it), counter(1), born_data(NumberOfElems) { }
     };
-    LFU_cache(const size_type sz): size(sz) {};
+
+
     std::unordered_map<key_type, cache_elem> my_hash;
 
+    /* set comparator */
     struct set_elem_cmp 
     {
         bool operator() (const cache_elem& lhs, const cache_elem& rhs) const 
@@ -45,12 +55,26 @@ public:
             }
             else
             {
-                return lhs.age < rhs.age;
+                return lhs.born_data < rhs.born_data;
             }
         }
     };
+public:
+    /* set is used for convinient storage for elems, sorted firstly by counter
+       if the counter is the same -> sort by data_born */
     std::set<cache_elem, set_elem_cmp> my_cache;
 
+    /* ctor for LFU_cache*/
+    LFU_cache(const size_type sz): size(sz) {}; 
+
+    ~LFU_cache()
+    {
+        my_cache.clear();
+        my_hash.clear();
+        my_list.clear();
+        size = InvalidValue;
+    }
+private:
     bool cache_is_full() const
     {
         return (my_cache.size() == size);
@@ -76,20 +100,18 @@ public:
         typename std::set<cache_elem, set_elem_cmp>::const_iterator set_iter = my_cache.begin();
         my_cache.erase(set_iter);
         my_hash.erase(set_iter->list_iter->key);
-        printf("%d", set_iter->list_iter->key);
         my_list.erase(set_iter->list_iter);
         
     }
     
     void update_elem(auto iter)
     {
-        //printf("before update %d\n", iter->second.counter);
         iter->second.counter++;
-        //printf("after update %d\n", NumberOfElems);
-        iter->second.age = NumberOfElems;
+        iter->second.born_data = NumberOfElems;
         NumberOfElems++;
     }
 
+public:
     bool lookup_update(list_elem& elem)
     {
         auto hit = my_hash.find(elem.key);
@@ -110,13 +132,17 @@ public:
     }
 }; /* class LFU_cache */
 
+
+
 /* Perfect Caching Algorithm */
 template <typename elem_type, typename key_type = int> 
 class PCA_cache
 {
-public:
-    const size_type size;
+private:
+    size_type size;
     size_type current_elem;
+
+public:
     struct list_elem
     {
         key_type key;
@@ -124,6 +150,8 @@ public:
         size_type distance;
         list_elem(key_type k, elem_type elem): key(k), value(elem), distance(MaxCacheSize) {}
     };
+
+private:
     using list = std::list<list_elem>;
     list my_list;
     using list_it = typename std::list<list_elem>::iterator;
@@ -131,15 +159,23 @@ public:
     {
         list_it list_iter;
         
-        cache_elem(list_it it): list_iter(it)
-        {
-            //printf("created ideal cache elem");
-        }
+        cache_elem(list_it it): list_iter(it) { }
     };
 
+public:
+    std::unordered_map<key_type, cache_elem> my_cache;
+    /* ctor for PCA cache */
     PCA_cache(const size_type sz): size(sz), current_elem(0) {};
 
-    std::unordered_map<key_type, cache_elem> my_cache;
+    ~PCA_cache()
+    {
+        my_cache.clear();
+        my_list.clear();
+        current_elem = InvalidValue;
+        size = InvalidValue;
+    }
+
+private:
     bool cache_is_full() const
     {
         return (my_cache.size() == size);
@@ -151,30 +187,42 @@ public:
         return (my_cache.size() == 0);
     }
 
-    //template <typename elem_type>
-    list_it count_distance(std::vector<elem_type>& all_elems)
+    /* This function is used to find the most useless element of cache
+       (if it's not worse than inserted elem)
+       returns list_it = std::list<list_elem>::iterator to the most useless element
+       or my_list.end(); - if the inserted elem is more useless than all elems in cache */
+    list_it count_distance(list_elem& inserted_elem, std::vector<elem_type>& all_elems)
     {
         list_it list_iter = my_list.begin();
         list_it iter_to_delete;
+        inserted_elem.distance = MaxCacheSize;
         size_type max_distance = 0;
         size_type all_elems_size = all_elems.size();
         for (size_type idx = 0; idx < size; idx++)
         {
-            
             elem_type elem_value = list_iter->value;
+            elem_type inserted_elem_value = inserted_elem.distance;
             size_type current_distance = list_iter->distance;
             for (size_type idx1 = current_elem; idx1 < all_elems_size; idx1++)
             {
                 if (elem_value == all_elems[idx1])
                 {
                     current_distance = idx1 - current_elem;
-                    break;
+
+                    /* need to stop our cycle */
+                    idx1 = all_elems_size;
+                }
+                else if (inserted_elem_value == all_elems[idx1] && idx1 != current_elem)
+                {
+                    inserted_elem.distance = idx1 - current_elem;
                 }
             }
             if(current_distance == MaxCacheSize)
             {
                 iter_to_delete = list_iter;
-                break;
+
+                /* immediately stops cycle */
+                idx = size;
             }
             else if (current_distance > max_distance)
             {
@@ -183,7 +231,10 @@ public:
             }
             list_iter++;
         }
-
+        if (inserted_elem.distance == MaxCacheSize)
+        {
+            return my_list.end();
+        }
         return iter_to_delete;
         
     }
@@ -196,35 +247,39 @@ public:
 
     void erase_elem(list_it& iter_to_delete)
     {
-        printf(" value %d", iter_to_delete->value);
         my_cache.erase(iter_to_delete->key);
         my_list.erase(iter_to_delete);
     }
 
-    //template <typename elem_type>
+public:
     bool lookup_update(list_elem& elem, std::vector<elem_type>& all_elems)
     {
         current_elem++;
         auto hit = my_cache.find(elem.key);
-        list_it iter_to_delete;
         if (hit == my_cache.end()) //not found key in hash
         {
+            list_it iter_to_delete;
             if (cache_is_full())
             {
-                iter_to_delete = count_distance(all_elems);
-                erase_elem(iter_to_delete);
+                iter_to_delete = count_distance(elem, all_elems);
+                if (iter_to_delete != my_list.end())
+                {
+                    erase_elem(iter_to_delete);
+                }
             }
-            printf("before");
-            insert_elem(elem);
-             printf("after");
-             printf("%d", my_cache.size());
+            if (iter_to_delete != my_list.end())
+            {
+                insert_elem(elem);
+            }
         }
         else
         {
-            printf("HIT\n");
             /* do nothing */
+            printf("Current elem%d\n", current_elem);
+            return true;
         }
-        return 1;
+        return false;
     }
 }; /* class PCA_cache*/
 } /* namespace caches */
+
