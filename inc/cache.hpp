@@ -77,21 +77,34 @@ public:
         my_list.clear();
         size = InvalidValue;
     }
+
+    bool check_errors() const
+    {
+        if (size <= 0)
+        {
+            std::cout << "size of LFU cache <= 0!" << std::endl;
+            return true;
+        }
+        return false;
+    }
 private:
     bool cache_is_full() const
     {
+        if (check_errors()) return false;
         return (my_cache.size() == size);
     }
 
     
     bool cache_is_empty() const
     {
+        if (check_errors()) return false;
         return (my_cache.size() == 0);
     }
 
 
     void insert_elem(list_elem& elem)
     {
+        if (check_errors()) return;
         my_list.emplace_front(elem.key, elem.value);
         my_cache.emplace(my_list.begin());
         my_hash.emplace(elem.key, my_list.begin());
@@ -100,6 +113,7 @@ private:
 
     void erase_elem()
     {
+        if (check_errors()) return;
         typename std::set<cache_elem, set_elem_cmp>::const_iterator set_iter = my_cache.begin();
         my_cache.erase(set_iter);
         my_hash.erase(set_iter->list_iter->key);
@@ -109,6 +123,7 @@ private:
     
     void update_elem(auto iter)
     {
+        if (check_errors()) return;
         iter->second.counter++;
         iter->second.born_data = NumberOfElems;
         NumberOfElems++;
@@ -117,6 +132,7 @@ private:
 public:
     bool lookup_update(list_elem& elem)
     {
+        if (check_errors()) return false;
         auto hit = my_hash.find(elem.key);
         if (hit == my_hash.end()) //not found key in hash
         {
@@ -177,16 +193,26 @@ public:
         current_elem = InvalidValue;
         size = InvalidValue;
     }
-
+    bool check_errors() const
+    {
+        if (size <= 0)
+        {
+            std::cout << "size of PCA cache <= 0!" << std::endl;
+            return true;
+        }
+        return false;
+    }
 private:
     bool cache_is_full() const
     {
+        if (check_errors()) return false;
         return (my_cache.size() == size);
     }
 
     
     bool cache_is_empty() const
     {
+        if (check_errors()) return false;
         return (my_cache.size() == 0);
     }
 
@@ -196,6 +222,7 @@ private:
        or my_list.end(); - if the inserted elem is more useless than all elems in cache */
     list_it count_distance(list_elem& inserted_elem, std::vector<elem_type>& all_elems)
     {
+        if (check_errors()) return my_list.end();
         list_it list_iter = my_list.begin();
         list_it iter_to_delete;
         inserted_elem.distance = MaxCacheSize;
@@ -212,7 +239,7 @@ private:
                 {
                     current_distance = idx1 - current_elem;
 
-                    /* need to stop our cycle */
+                    /* need to stop our cycle immediately */
                     idx1 = all_elems_size;
                 }
                 else if (inserted_elem_value == all_elems[idx1] && idx1 != current_elem)
@@ -244,12 +271,14 @@ private:
 
     void insert_elem(list_elem& elem)
     {
+        if (check_errors()) return;
         my_list.emplace_front(elem.key, elem.value);
         my_cache.emplace(elem.key, my_list.begin());
     }
 
     void erase_elem(list_it& iter_to_delete)
     {
+        if (check_errors()) return;
         my_cache.erase(iter_to_delete->key);
         my_list.erase(iter_to_delete);
     }
@@ -257,6 +286,7 @@ private:
 public:
     bool lookup_update(list_elem& elem, std::vector<elem_type>& all_elems)
     {
+        if (check_errors()) return false;
         current_elem++;
         auto hit = my_cache.find(elem.key);
         if (hit == my_cache.end()) //not found key in hash
