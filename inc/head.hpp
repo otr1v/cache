@@ -7,6 +7,4 @@
 #include <limits>
 #include <vector>
 
-
-const bool LFU_CACHE = true;
-const bool PCA_CACHE = false;
+const std::size_t NumberOfTests = 3;

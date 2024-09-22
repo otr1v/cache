@@ -16,6 +16,9 @@ static std::size_t NumberOfElems = 0;
 
 static std::size_t MaxCacheSize = UINT32_MAX;
 static std::size_t InvalidValue = 0xDEADBABE;
+
+
+/* Least Frequently used cache */
 template <typename elem_type, typename key_type = int>  
 class LFU_cache
 {
@@ -275,7 +278,6 @@ public:
         else
         {
             /* do nothing */
-            printf("Current elem%d\n", current_elem);
             return true;
         }
         return false;
