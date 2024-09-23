@@ -62,12 +62,12 @@ private:
             }
         }
     };
+    
 public:
     /* set is used for convinient storage for elems, sorted firstly by counter
        if the counter is the same -> sort by data_born */
     std::set<cache_elem, set_elem_cmp> my_cache;
 
-    /* ctor for LFU_cache*/
     LFU_cache(const size_type sz): size(sz) {}; 
 
     ~LFU_cache()
@@ -87,6 +87,7 @@ public:
         }
         return false;
     }
+
 private:
     bool cache_is_full() const
     {
@@ -183,7 +184,7 @@ private:
 
 public:
     std::unordered_map<key_type, cache_elem> my_cache;
-    /* ctor for PCA cache */
+
     PCA_cache(const size_type sz): size(sz), current_elem(0) {};
 
     ~PCA_cache()
@@ -202,6 +203,7 @@ public:
         }
         return false;
     }
+
 private:
     bool cache_is_full() const
     {
@@ -223,24 +225,26 @@ private:
     list_it count_distance(list_elem& inserted_elem, std::vector<elem_type>& all_elems)
     {
         if (check_errors()) return my_list.end();
+
         list_it list_iter = my_list.begin();
         list_it iter_to_delete;
-        inserted_elem.distance = MaxCacheSize;
         size_type max_distance = 0;
         size_type all_elems_size = all_elems.size();
+
+        inserted_elem.distance = MaxCacheSize;
+
         for (size_type idx = 0; idx < size; idx++)
         {
             elem_type elem_value = list_iter->value;
             elem_type inserted_elem_value = inserted_elem.distance;
             size_type current_distance = list_iter->distance;
+
             for (size_type idx1 = current_elem; idx1 < all_elems_size; idx1++)
             {
                 if (elem_value == all_elems[idx1])
                 {
                     current_distance = idx1 - current_elem;
-
-                    /* need to stop our cycle immediately */
-                    idx1 = all_elems_size;
+                    break;
                 }
                 else if (inserted_elem_value == all_elems[idx1] && idx1 != current_elem)
                 {
@@ -250,9 +254,7 @@ private:
             if(current_distance == MaxCacheSize)
             {
                 iter_to_delete = list_iter;
-
-                /* immediately stops cycle */
-                idx = size;
+                break;
             }
             else if (current_distance > max_distance)
             {
@@ -287,6 +289,7 @@ public:
     bool lookup_update(list_elem& elem, std::vector<elem_type>& all_elems)
     {
         if (check_errors()) return false;
+
         current_elem++;
         auto hit = my_cache.find(elem.key);
         if (hit == my_cache.end()) //not found key in hash
