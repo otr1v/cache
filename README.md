@@ -11,7 +11,7 @@ If you want to debug my code use <code> cmake -DCMAKE_BUILD_TYPE=debug . </code>
 ### How to input
 First of all write cache size, then input size and after that write desired elements of input.
 - Example of input:
-- <code> 2 5 1 2 1 2 1 </code>
+- <code> 1 5 1 2 1 2 1 </code>
 - Example of output:
 - <code> LFU_hits - 0 </code>
 - <code> PCA_hits - 2 </code>
