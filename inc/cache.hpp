@@ -62,7 +62,7 @@ private:
             }
         }
     };
-    
+
 public:
     /* set is used for convinient storage for elems, sorted firstly by counter
        if the counter is the same -> sort by data_born */
@@ -225,7 +225,6 @@ private:
     list_it count_distance(list_elem& inserted_elem, std::vector<elem_type>& all_elems)
     {
         if (check_errors()) return my_list.end();
-
         list_it list_iter = my_list.begin();
         list_it iter_to_delete;
         size_type max_distance = 0;
@@ -236,7 +235,7 @@ private:
         for (size_type idx = 0; idx < size; idx++)
         {
             elem_type elem_value = list_iter->value;
-            elem_type inserted_elem_value = inserted_elem.distance;
+            elem_type inserted_elem_value = inserted_elem.value;
             size_type current_distance = list_iter->distance;
 
             for (size_type idx1 = current_elem; idx1 < all_elems_size; idx1++)
@@ -281,6 +280,7 @@ private:
     void erase_elem(list_it& iter_to_delete)
     {
         if (check_errors()) return;
+        printf("iter: %d\n", iter_to_delete->value);
         my_cache.erase(iter_to_delete->key);
         my_list.erase(iter_to_delete);
     }
