@@ -6,5 +6,6 @@
 #include <set>
 #include <limits>
 #include <vector>
+#include <fstream>
 
-const std::size_t NumberOfTests = 3;
+const std::size_t NumberOfTests = 4;

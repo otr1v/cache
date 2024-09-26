@@ -21,13 +21,17 @@ void test_base(tests& base_of_tests)
     test test1 = {2, 7,  {1, 2, 3, 1, 2, 3, 1},          3, 0};
     test test2 = {3, 10, {1, 1, 2, 2, 3, 3, 4, 1, 2, 3}, 6, 3};
     test test3 = {1, 6,  {1, 1, 2, 1, 2, 1},             3, 1};
+    test test4 = {5, 30, {4, 2, 1, 2, 5, 4, 1, 6, 3, 2, 
+                          10, 2, 9, 2, 7, 5, 10, 2, 6, 1, 
+                          0, 1, 2, 4, 10, 5, 9, 10, 2, 5}, 18, 11};
     base_of_tests.one_test[0] = test1;
     base_of_tests.one_test[1] = test2;
     base_of_tests.one_test[2] = test3;
+    base_of_tests.one_test[3] = test4;
 }
 
 
-void run_tests()
+void run_unit_tests()
 {
     tests base;
     test_base(base);
@@ -51,17 +55,49 @@ void run_tests()
         if (PCA_hit == base.one_test[idx].PCA_hits_answer && 
             LFU_hit == base.one_test[idx].LFU_hits_answer)
         {
-            std::cout << "Test " << idx << " successfully passed" << std::endl;
+            std::cout << "Unit Test " << idx << " successfully passed" << std::endl;
         }
         else
         {
-            std::cout << "Test " << idx << " failed" << std::endl;
+            std::cout << "Unit Test " << idx << " failed" << std::endl;
         }
     }
-        
 }
+template <typename elem_type = int>
+void run_e2e_tests()
+{
+    std::vector<elem_type> all_elems;
+
+    std::size_t cache_size = 0, input_size = 0, LFU_hit = 0, PCA_hit = 0;
+    elem_type elem = 0;
+
+    std::ifstream is("tests/tests.txt");
+    is >> cache_size;
+    is >> input_size;
+
+    caches::PCA_cache<int> my_PCA_cache(cache_size);
+    caches::LFU_cache<int> my_LFU_cache(cache_size);
+
+    for (std::size_t idx = 0; idx < input_size; idx++)
+    {
+        is >> elem;
+        all_elems.push_back(elem);
+        caches::LFU_cache<int>::list_elem list2(elem, elem);
+        LFU_hit += my_LFU_cache.lookup_update(list2);
+    }
+    for (std::size_t idx = 0; idx < input_size; idx++)
+    {
+        caches::PCA_cache<int>::list_elem list(all_elems[idx], all_elems[idx]);
+        PCA_hit += my_PCA_cache.lookup_update(list, all_elems);
+    }
+    std::cout << "e2e results:" << std::endl << "LFU hits " << LFU_hit << std::endl;
+    std::cout << "PCA hits " << PCA_hit << std::endl;
+    
+}
+
 int main()
 {
-    run_tests();
+    run_unit_tests();
+    run_e2e_tests();
     return 0;
 }

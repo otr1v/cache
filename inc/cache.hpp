@@ -91,21 +91,27 @@ public:
 private:
     bool cache_is_full() const
     {
-        if (check_errors()) return false;
+        #ifdef DEBUG
+            if (check_errors()) return false;
+        #endif /* DEBUG */
         return (my_cache.size() == size);
     }
 
     
     bool cache_is_empty() const
     {
-        if (check_errors()) return false;
+        #ifdef DEBUG
+            if (check_errors()) return false;
+        #endif /* DEBUG */
         return (my_cache.size() == 0);
     }
 
 
     void insert_elem(list_elem& elem)
     {
-        if (check_errors()) return;
+        #ifdef DEBUG
+            if (check_errors()) return;
+        #endif /* DEBUG */
         my_list.emplace_front(elem.key, elem.value);
         my_cache.emplace(my_list.begin());
         my_hash.emplace(elem.key, my_list.begin());
@@ -114,7 +120,9 @@ private:
 
     void erase_elem()
     {
-        if (check_errors()) return;
+        #ifdef DEBUG
+            if (check_errors()) return;
+        #endif /* DEBUG */
         typename std::set<cache_elem, set_elem_cmp>::const_iterator set_iter = my_cache.begin();
         my_cache.erase(set_iter);
         my_hash.erase(set_iter->list_iter->key);
@@ -124,16 +132,33 @@ private:
     
     void update_elem(auto iter)
     {
-        if (check_errors()) return;
+        #ifdef DEBUG
+            if (check_errors()) return;
+        #endif /* DEBUG */
         iter->second.counter++;
         iter->second.born_data = NumberOfElems;
         NumberOfElems++;
     }
 
+    void print_cache()
+    {
+        list_it list_iter = my_list.begin();
+        std::cout << "CURRENT LFU CACHE SIZE " << size << std::endl;
+        for (size_type idx = 0; idx < size; idx++)
+        {
+            std::cout << list_iter->value << " ";
+            list_iter++;
+        }
+        std::cout << std::endl;
+    }
+
 public:
     bool lookup_update(list_elem& elem)
     {
-        if (check_errors()) return false;
+        #ifdef DEBUG
+            if (check_errors()) return false;
+            print_cache();
+        #endif /* DEBUG */
         auto hit = my_hash.find(elem.key);
         if (hit == my_hash.end()) //not found key in hash
         {
@@ -207,14 +232,18 @@ public:
 private:
     bool cache_is_full() const
     {
-        if (check_errors()) return false;
+        #ifdef DEBUG
+            if (check_errors()) return false;
+        #endif /* DEBUG */
         return (my_cache.size() == size);
     }
 
     
     bool cache_is_empty() const
     {
-        if (check_errors()) return false;
+        #ifdef DEBUG
+            if (check_errors()) return false;
+        #endif /* DEBUG */
         return (my_cache.size() == 0);
     }
 
@@ -224,7 +253,9 @@ private:
        or my_list.end(); - if the inserted elem is more useless than all elems in cache */
     list_it count_distance(list_elem& inserted_elem, std::vector<elem_type>& all_elems)
     {
-        if (check_errors()) return my_list.end();
+        #ifdef DEBUG
+            if (check_errors()) return my_list.end();
+        #endif /* DEBUG */
         list_it list_iter = my_list.begin();
         list_it iter_to_delete;
         size_type max_distance = 0;
@@ -272,24 +303,42 @@ private:
 
     void insert_elem(list_elem& elem)
     {
-        if (check_errors()) return;
+        #ifdef DEBUG
+            if (check_errors()) return;
+        #endif /* DEBUG */
         my_list.emplace_front(elem.key, elem.value);
         my_cache.emplace(elem.key, my_list.begin());
     }
 
     void erase_elem(list_it& iter_to_delete)
     {
-        if (check_errors()) return;
-        printf("iter: %d\n", iter_to_delete->value);
+        #ifdef DEBUG
+            if (check_errors()) return;
+            std::cout << "deleting elem" << iter_to_delete->value << std::endl;
+        #endif /* DEBUG */
         my_cache.erase(iter_to_delete->key);
         my_list.erase(iter_to_delete);
+    }
+
+    void print_cache()
+    {
+        list_it list_iter = my_list.begin();
+        std::cout << "CURRENT PCA CACHE SIZE " << size << std::endl;
+        for (size_type idx = 0; idx < size; idx++)
+        {
+            std::cout << list_iter->value << " ";
+            list_iter++;
+        }
+        std::cout << std::endl;
     }
 
 public:
     bool lookup_update(list_elem& elem, std::vector<elem_type>& all_elems)
     {
-        if (check_errors()) return false;
-
+        #ifdef DEBUG
+            if (check_errors()) return false;
+            print_cache();
+        #endif /* DEBUG */
         current_elem++;
         auto hit = my_cache.find(elem.key);
         if (hit == my_cache.end()) //not found key in hash
