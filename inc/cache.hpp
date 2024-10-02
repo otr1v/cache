@@ -14,9 +14,6 @@ using size_type = std::size_t;
      */
 static std::size_t NumberOfElems = 0;
 
-static std::size_t MaxCacheSize = UINT32_MAX;
-
-
 /* Least Frequently used cache */
 template <typename elem_type, typename key_type = int>  
 class LFU_cache
@@ -185,8 +182,7 @@ public:
     {
         key_type key;
         elem_type value;
-        size_type distance;
-        list_elem(key_type k, elem_type elem): key(k), value(elem), distance(MaxCacheSize) {}
+        list_elem(key_type k, elem_type elem): key(k), value(elem) {}
     };
 
 private:
@@ -251,8 +247,6 @@ private:
         list_it iter_to_delete;
         size_type max_distance = 0;
         
-        //TODO remove list.distance
-       // size_type all_elems_size = all_elems.size();
         elem_type inserted_elem_value = inserted_elem.value;
 
         auto inserted_elem_hit = PCA_map.find(inserted_elem_value);
@@ -261,12 +255,10 @@ private:
             return my_list.end();
         }
         size_type inserted_elem_distance = *(inserted_elem_hit->second.begin());
-        //inserted_elem.distance = MaxCacheSize;
 
         for (size_type idx = 0; idx < size; idx++)
         {
             elem_type elem_value = list_iter->value;
-            //size_type current_distance = list_iter->distance;
             size_type current_distance = 0;
             
             auto PCA_hit = PCA_map.find(elem_value);
@@ -284,23 +276,7 @@ private:
             {
                 continue;
             }
-            // for (size_type idx1 = current_elem; idx1 < all_elems_size; idx1++)
-            // {
-            //     if (elem_value == all_elems[idx1])
-            //     {
-            //         current_distance = idx1 - current_elem;
-            //         break;
-            //     }
-            //     else if (inserted_elem_value == all_elems[idx1] && idx1 != current_elem)
-            //     {
-            //         inserted_elem.distance = idx1 - current_elem;
-            //     }
-            // }
-            // if(current_distance == MaxCacheSize)
-            // {
-            //     iter_to_delete = list_iter;
-            //     break;
-            // }
+
             if ( current_distance > max_distance)
             {
                 max_distance = current_distance;
@@ -308,10 +284,7 @@ private:
             }
             list_iter++;
         }
-        // if (inserted_elem.distance == MaxCacheSize)
-        // {
-        //     return my_list.end();
-        // }
+
         if (max_distance == 0)
         {
             return my_list.end();
