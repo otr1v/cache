@@ -15,7 +15,6 @@ using size_type = std::size_t;
 static std::size_t NumberOfElems = 0;
 
 static std::size_t MaxCacheSize = UINT32_MAX;
-static std::size_t InvalidValue = 0xDEADBABE;
 
 
 /* Least Frequently used cache */
@@ -70,14 +69,9 @@ public:
 
     LFU_cache(const size_type sz): size(sz) {}; 
 
-    ~LFU_cache()
-    {
-        my_cache.clear();
-        my_hash.clear();
-        my_list.clear();
-        size = InvalidValue;
-    }
+    ~LFU_cache() {}
 
+private:
     bool check_errors() const
     {
         if (size <= 0)
@@ -88,7 +82,6 @@ public:
         return false;
     }
 
-private:
     bool cache_is_full() const
     {
         #ifdef DEBUG
@@ -212,13 +205,10 @@ public:
 
     PCA_cache(const size_type sz): size(sz), current_elem(0) {};
 
-    ~PCA_cache()
-    {
-        my_cache.clear();
-        my_list.clear();
-        current_elem = InvalidValue;
-        size = InvalidValue;
-    }
+    ~PCA_cache() {}
+
+
+private:
     bool check_errors() const
     {
         if (size <= 0)
@@ -229,7 +219,6 @@ public:
         return false;
     }
 
-private:
     bool cache_is_full() const
     {
         #ifdef DEBUG
@@ -251,7 +240,9 @@ private:
        (if it's not worse than inserted elem)
        returns list_it = std::list<list_elem>::iterator to the most useless element
        or my_list.end(); - if the inserted elem is more useless than all elems in cache */
-    list_it count_distance(list_elem& inserted_elem, std::vector<elem_type>& all_elems)
+    list_it count_distance(
+        list_elem& inserted_elem, 
+        std::unordered_map<elem_type, std::list<std::size_t>>& PCA_map)
     {
         #ifdef DEBUG
             if (check_errors()) return my_list.end();
@@ -259,46 +250,73 @@ private:
         list_it list_iter = my_list.begin();
         list_it iter_to_delete;
         size_type max_distance = 0;
-        size_type all_elems_size = all_elems.size();
+        
+        //TODO remove list.distance
+       // size_type all_elems_size = all_elems.size();
+        elem_type inserted_elem_value = inserted_elem.value;
 
-        inserted_elem.distance = MaxCacheSize;
+        auto inserted_elem_hit = PCA_map.find(inserted_elem_value);
+        if (inserted_elem_hit->second.size() == 0)
+        {
+            return my_list.end();
+        }
+        size_type inserted_elem_distance = *(inserted_elem_hit->second.begin());
+        //inserted_elem.distance = MaxCacheSize;
 
         for (size_type idx = 0; idx < size; idx++)
         {
             elem_type elem_value = list_iter->value;
-            elem_type inserted_elem_value = inserted_elem.value;
-            size_type current_distance = list_iter->distance;
-
-            for (size_type idx1 = current_elem; idx1 < all_elems_size; idx1++)
+            //size_type current_distance = list_iter->distance;
+            size_type current_distance = 0;
+            
+            auto PCA_hit = PCA_map.find(elem_value);
+            if (PCA_hit->second.size() > 0)
             {
-                if (elem_value == all_elems[idx1])
-                {
-                    current_distance = idx1 - current_elem;
-                    break;
-                }
-                else if (inserted_elem_value == all_elems[idx1] && idx1 != current_elem)
-                {
-                    inserted_elem.distance = idx1 - current_elem;
-                }
+                current_distance = *(PCA_hit->second.begin());
             }
-            if(current_distance == MaxCacheSize)
+            else
             {
                 iter_to_delete = list_iter;
                 break;
             }
-            else if (current_distance > max_distance)
+
+            if (current_distance < inserted_elem_distance)
+            {
+                continue;
+            }
+            // for (size_type idx1 = current_elem; idx1 < all_elems_size; idx1++)
+            // {
+            //     if (elem_value == all_elems[idx1])
+            //     {
+            //         current_distance = idx1 - current_elem;
+            //         break;
+            //     }
+            //     else if (inserted_elem_value == all_elems[idx1] && idx1 != current_elem)
+            //     {
+            //         inserted_elem.distance = idx1 - current_elem;
+            //     }
+            // }
+            // if(current_distance == MaxCacheSize)
+            // {
+            //     iter_to_delete = list_iter;
+            //     break;
+            // }
+            if ( current_distance > max_distance)
             {
                 max_distance = current_distance;
                 iter_to_delete = list_iter;
             }
             list_iter++;
         }
-        if (inserted_elem.distance == MaxCacheSize)
+        // if (inserted_elem.distance == MaxCacheSize)
+        // {
+        //     return my_list.end();
+        // }
+        if (max_distance == 0)
         {
             return my_list.end();
         }
         return iter_to_delete;
-        
     }
 
     void insert_elem(list_elem& elem)
@@ -333,12 +351,16 @@ private:
     }
 
 public:
-    bool lookup_update(list_elem& elem, std::vector<elem_type>& all_elems)
+    bool lookup_update(
+        list_elem& elem, 
+        std::unordered_map<elem_type, std::list<std::size_t>>& PCA_map)
     {
         #ifdef DEBUG
             if (check_errors()) return false;
             print_cache();
         #endif /* DEBUG */
+        auto hit_PCA = PCA_map.find(elem.value);
+        hit_PCA->second.pop_front();
         current_elem++;
         auto hit = my_cache.find(elem.key);
         if (hit == my_cache.end()) //not found key in hash
@@ -346,7 +368,7 @@ public:
             list_it iter_to_delete;
             if (cache_is_full())
             {
-                iter_to_delete = count_distance(elem, all_elems);
+                iter_to_delete = count_distance(elem, PCA_map);
                 if (iter_to_delete != my_list.end())
                 {
                     erase_elem(iter_to_delete);

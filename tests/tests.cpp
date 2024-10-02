@@ -40,17 +40,36 @@ void run_unit_tests()
     {
         std::size_t PCA_hit = 0;
         std::size_t LFU_hit = 0;
+
         caches::PCA_cache<int> my_PCA_cache(base.one_test[idx].cache_size);
         caches::LFU_cache<int> my_LFU_cache(base.one_test[idx].cache_size);
+
         std::size_t input_size = base.one_test[idx].input_size;
+        std::unordered_map<int, std::list<std::size_t>> PCA_map;
+
+        for (std::size_t elem = 0; elem < input_size; elem++)
+        {
+            caches::LFU_cache<int>::list_elem list2(base.one_test[idx].all_elems[elem], 
+                                                    base.one_test[idx].all_elems[elem]);
+            LFU_hit += my_LFU_cache.lookup_update(list2);
+            
+            auto hit = PCA_map.find(base.one_test[idx].all_elems[elem]);
+            if (hit == PCA_map.end()) //not found key in hash
+            {
+                std::list<std::size_t> new_list;
+                new_list.emplace_back(elem);
+                PCA_map.emplace(base.one_test[idx].all_elems[elem], new_list);
+            }
+            else
+            {
+                hit->second.emplace_back(elem);
+            }
+        }
         for (std::size_t elem = 0; elem < input_size; elem++)
         {
             caches::PCA_cache<int>::list_elem list1(base.one_test[idx].all_elems[elem], 
                                                     base.one_test[idx].all_elems[elem]);
-            PCA_hit += my_PCA_cache.lookup_update(list1, base.one_test[idx].all_elems);
-            caches::LFU_cache<int>::list_elem list2(base.one_test[idx].all_elems[elem], 
-                                                    base.one_test[idx].all_elems[elem]);
-            LFU_hit += my_LFU_cache.lookup_update(list2);
+            PCA_hit += my_PCA_cache.lookup_update(list1, PCA_map);
         }
         if (PCA_hit == base.one_test[idx].PCA_hits_answer && 
             LFU_hit == base.one_test[idx].LFU_hits_answer)
@@ -67,6 +86,7 @@ template <typename elem_type = int>
 void run_e2e_tests()
 {
     std::vector<elem_type> all_elems;
+    std::unordered_map<int, std::list<std::size_t>> PCA_map;
 
     std::size_t cache_size = 0, input_size = 0, LFU_hit = 0, PCA_hit = 0;
     elem_type elem = 0;
@@ -84,11 +104,23 @@ void run_e2e_tests()
         all_elems.push_back(elem);
         caches::LFU_cache<int>::list_elem list2(elem, elem);
         LFU_hit += my_LFU_cache.lookup_update(list2);
+
+        auto hit = PCA_map.find(elem);
+        if (hit == PCA_map.end()) //not found key in hash
+        {
+            std::list<std::size_t> new_list;
+            new_list.emplace_back(idx);
+            PCA_map.emplace(elem, new_list);
+        }
+        else
+        {
+            hit->second.emplace_back(idx);
+        }
     }
     for (std::size_t idx = 0; idx < input_size; idx++)
     {
         caches::PCA_cache<int>::list_elem list(all_elems[idx], all_elems[idx]);
-        PCA_hit += my_PCA_cache.lookup_update(list, all_elems);
+        PCA_hit += my_PCA_cache.lookup_update(list, PCA_map);
     }
     std::cout << "e2e results:" << std::endl << "LFU hits " << LFU_hit << std::endl;
     std::cout << "PCA hits " << PCA_hit << std::endl;
