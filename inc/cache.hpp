@@ -236,7 +236,7 @@ private:
        (if it's not worse than inserted elem)
        returns list_it = std::list<list_elem>::iterator to the most useless element
        or my_list.end(); - if the inserted elem is more useless than all elems in cache */
-    list_it count_distance(
+    list_it count_far_elem(
         list_elem& inserted_elem, 
         std::unordered_map<elem_type, std::list<std::size_t>>& PCA_map)
     {
@@ -245,7 +245,7 @@ private:
         #endif /* DEBUG */
         list_it list_iter = my_list.begin();
         list_it iter_to_delete;
-        size_type max_distance = 0;
+        size_type far_elem = 0;
         
         elem_type inserted_elem_value = inserted_elem.value;
 
@@ -254,22 +254,22 @@ private:
         {
             return my_list.end();
         }
-        size_type inserted_elem_distance = *(inserted_elem_hit->second.begin());
+        size_type inserted_elem_next_hit_idx = *(inserted_elem_hit->second.begin());
         #ifdef DEBUG 
             std::cout << "inserted elem dist " << inserted_elem_distance << std::endl;
         #endif /* DEBUG */
         for (size_type idx = 0; idx < size; idx++)
         {
             elem_type elem_value = list_iter->value;
-            size_type current_distance = 0;
+            size_type current_cache_elem = 0;
             
             auto PCA_hit = PCA_map.find(elem_value);
             if (PCA_hit->second.size() > 0)
             {
-                current_distance = *(PCA_hit->second.begin());
+                current_cache_elem = *(PCA_hit->second.begin());
 
                 #ifdef DEBUG
-                    std::cout << "current elem dist of idx " << idx << " is " << current_distance << std::endl;
+                    std::cout << "current elem dist of idx " << idx << " is " << current_cache_elem << std::endl;
                 #endif /* DEBUG */
             }
             else
@@ -278,21 +278,21 @@ private:
                 break;
             }
 
-            if (current_distance < inserted_elem_distance)
+            if (current_cache_elem < inserted_elem_next_hit_idx)
             {
                 list_iter++;
                 continue;
             }
 
-            if ( current_distance > max_distance)
+            if ( current_cache_elem > far_elem)
             {
-                max_distance = current_distance;
+                far_elem = current_cache_elem;
                 iter_to_delete = list_iter;
             }
             list_iter++;
         }
 
-        if (max_distance == 0)
+        if (far_elem == 0)
         {
             return my_list.end();
         }
@@ -348,7 +348,7 @@ public:
             list_it iter_to_delete;
             if (cache_is_full())
             {
-                iter_to_delete = count_distance(elem, PCA_map);
+                iter_to_delete = count_far_elem(elem, PCA_map);
                 if (iter_to_delete != my_list.end())
                 {
                     erase_elem(iter_to_delete);
