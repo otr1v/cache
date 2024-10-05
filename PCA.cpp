@@ -23,7 +23,7 @@ int main()
     {
         std::cout << "elem is " << it->first << std::endl;
         auto start = it->second.begin();
-        for (int i = 0; i < it->second.size(); i++)
+        for (std::size_t i = 0; i < it->second.size(); i++)
         {
             std::cout << "list member" << *start << std::endl;
             start++;
@@ -38,6 +38,6 @@ int main()
          caches::PCA_cache<int>::list_elem list(all_elems[idx], all_elems[idx]);
          PCA_hit += my_PCA_cache.lookup_update(list, PCA_map);
     }
-    std::cout << "PCA_hits - " << PCA_hit << std::endl;
+    std::cout << PCA_hit << std::endl;
     return 0;
 }

@@ -255,7 +255,9 @@ private:
             return my_list.end();
         }
         size_type inserted_elem_distance = *(inserted_elem_hit->second.begin());
-
+        #ifdef DEBUG 
+            std::cout << "inserted elem dist " << inserted_elem_distance << std::endl;
+        #endif /* DEBUG */
         for (size_type idx = 0; idx < size; idx++)
         {
             elem_type elem_value = list_iter->value;
@@ -265,6 +267,10 @@ private:
             if (PCA_hit->second.size() > 0)
             {
                 current_distance = *(PCA_hit->second.begin());
+
+                #ifdef DEBUG
+                    std::cout << "current elem dist of idx " << idx << " is " << current_distance << std::endl;
+                #endif /* DEBUG */
             }
             else
             {
@@ -274,6 +280,7 @@ private:
 
             if (current_distance < inserted_elem_distance)
             {
+                list_iter++;
                 continue;
             }
 
@@ -315,7 +322,7 @@ private:
     {
         list_it list_iter = my_list.begin();
         std::cout << "CURRENT PCA CACHE SIZE " << size << std::endl;
-        for (size_type idx = 0; idx < size; idx++)
+        for (size_type idx = 0; idx < size && idx < current_elem; idx++)
         {
             std::cout << list_iter->value << " ";
             list_iter++;

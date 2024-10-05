@@ -25,6 +25,6 @@ int main()
          caches::LFU_cache<int>::list_elem list(all_elems[idx], all_elems[idx]);
          LFU_hit += my_LFU_cache.lookup_update(list);
     }
-    std::cout << "LFU_hits - " << LFU_hit << std::endl;
+    std::cout << LFU_hit << std::endl;
     return 0;
 }
