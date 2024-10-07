@@ -66,7 +66,6 @@ public:
 
     LFU_cache(const size_type sz): size(sz) {}; 
 
-    ~LFU_cache() {}
 
 private:
     bool check_errors() const
@@ -201,7 +200,6 @@ public:
 
     PCA_cache(const size_type sz): size(sz), current_elem(0) {};
 
-    ~PCA_cache() {}
 
 
 private:
@@ -256,7 +254,8 @@ private:
         }
         size_type inserted_elem_next_hit_idx = *(inserted_elem_hit->second.begin());
         #ifdef DEBUG 
-            std::cout << "inserted elem dist " << inserted_elem_distance << std::endl;
+            std::cout << "inserted elem is " << inserted_elem_value << std::endl;
+            std::cout << "inserted elem dist " << inserted_elem_next_hit_idx << std::endl;
         #endif /* DEBUG */
         for (size_type idx = 0; idx < size; idx++)
         {
@@ -267,14 +266,14 @@ private:
             if (PCA_hit->second.size() > 0)
             {
                 current_cache_elem = *(PCA_hit->second.begin());
-
                 #ifdef DEBUG
-                    std::cout << "current elem dist of idx " << idx << " is " << current_cache_elem << std::endl;
+                    std::cout << "current elem dist of " << elem_value << " is " << current_cache_elem << std::endl;
                 #endif /* DEBUG */
             }
             else
             {
                 iter_to_delete = list_iter;
+                far_elem = 1;
                 break;
             }
 
@@ -312,7 +311,7 @@ private:
     {
         #ifdef DEBUG
             if (check_errors()) return;
-            std::cout << "deleting elem" << iter_to_delete->value << std::endl;
+            std::cout << "deleting elem " << iter_to_delete->value << std::endl;
         #endif /* DEBUG */
         my_cache.erase(iter_to_delete->key);
         my_list.erase(iter_to_delete);
@@ -346,6 +345,7 @@ public:
         if (hit == my_cache.end()) //not found key in hash
         {
             list_it iter_to_delete;
+            
             if (cache_is_full())
             {
                 iter_to_delete = count_far_elem(elem, PCA_map);
