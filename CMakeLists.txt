@@ -11,6 +11,7 @@ set(LFU LFU.cpp src/input.cpp)
 set(PCA PCA.cpp src/input.cpp)
 
 
+
 add_executable(my_LFU ${LFU})
 add_executable(my_PCA ${PCA})
 add_executable(${PROJECT_NAME} ${SRC_LIST})
